@@ -1,5 +1,4 @@
-import { useReducer } from 'react';
-
+import { useReducer, useEffect } from 'react';
 import CartContext from './cart-context';
 
 const defaultCartState = {
@@ -8,54 +7,59 @@ const defaultCartState = {
 };
 
 const cartReducer = (state, action) => {
-  if (action.type === 'ADD') {
-    const updatedTotalAmount =
-      state.totalAmount + action.item.price * action.item.amount;
-
-    const existingCartItemIndex = state.items.findIndex(
-      (item) => item.id === action.item.id
-    );
-    const existingCartItem = state.items[existingCartItemIndex];
-    let updatedItems;
-
-    if (existingCartItem) {
-      const updatedItem = {
-        ...existingCartItem,
-        amount: existingCartItem.amount + action.item.amount,
+  switch (action.type) {
+    case 'REPLACE':
+      return {
+        items: action.items,
+        totalAmount: action.totalAmount,
       };
-      updatedItems = [...state.items];
-      updatedItems[existingCartItemIndex] = updatedItem;
-    } else {
-      updatedItems = state.items.concat(action.item);
-    }
+    case 'ADD':
+      const addedTotalAmount =
+        state.totalAmount + action.item.price * action.item.amount;
 
-    return {
-      items: updatedItems,
-      totalAmount: updatedTotalAmount,
-    };
+      const addedExistingCartItemIndex = state.items.findIndex(
+        (item) => item.id === action.item.id
+      );
+      const addedExistingCartItem = state.items[addedExistingCartItemIndex];
+      let addedUpdatedItems;
+
+      if (addedExistingCartItem) {
+        const addedUpdatedItem = {
+          ...addedExistingCartItem,
+          amount: addedExistingCartItem.amount + action.item.amount,
+        };
+        addedUpdatedItems = [...state.items];
+        addedUpdatedItems[addedExistingCartItemIndex] = addedUpdatedItem;
+      } else {
+        addedUpdatedItems = state.items.concat(action.item);
+      }
+
+      return {
+        items: addedUpdatedItems,
+        totalAmount: addedTotalAmount,
+      };
+    case 'REMOVE':
+      const removedExistingCartItemIndex = state.items.findIndex(
+        (item) => item.id === action.id
+      );
+      const removedExistingItem = state.items[removedExistingCartItemIndex];
+      const removedTotalAmount = state.totalAmount - removedExistingItem.price;
+      let removedUpdatedItems;
+      if (removedExistingItem.amount === 1) {
+        removedUpdatedItems = state.items.filter(item => item.id !== action.id);
+      } else {
+        const removedUpdatedItem = { ...removedExistingItem, amount: removedExistingItem.amount - 1 };
+        removedUpdatedItems = [...state.items];
+        removedUpdatedItems[removedExistingCartItemIndex] = removedUpdatedItem;
+      }
+
+      return {
+        items: removedUpdatedItems,
+        totalAmount: removedTotalAmount
+      };
+    default:
+      return state;
   }
-  if (action.type === 'REMOVE') {
-    const existingCartItemIndex = state.items.findIndex(
-      (item) => item.id === action.id
-    );
-    const existingItem = state.items[existingCartItemIndex];
-    const updatedTotalAmount = state.totalAmount - existingItem.price;
-    let updatedItems;
-    if (existingItem.amount === 1) {
-      updatedItems = state.items.filter(item => item.id !== action.id);
-    } else {
-      const updatedItem = { ...existingItem, amount: existingItem.amount - 1 };
-      updatedItems = [...state.items];
-      updatedItems[existingCartItemIndex] = updatedItem;
-    }
-
-    return {
-      items: updatedItems,
-      totalAmount: updatedTotalAmount
-    };
-  }
-
-  return defaultCartState;
 };
 
 const CartProvider = (props) => {
@@ -63,6 +67,20 @@ const CartProvider = (props) => {
     cartReducer,
     defaultCartState
   );
+
+  // Load cart data from local storage when component mounts
+  useEffect(() => {
+    const storedCartData = localStorage.getItem('cartData');
+    if (storedCartData) {
+      const cartData = JSON.parse(storedCartData);
+      dispatchCartAction({ type: 'REPLACE', items: cartData.items, totalAmount: cartData.totalAmount });
+    }
+  }, []);
+
+  // Save cart data to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('cartData', JSON.stringify(cartState));
+  }, [cartState]);
 
   const addItemToCartHandler = (item) => {
     dispatchCartAction({ type: 'ADD', item: item });
@@ -87,3 +105,4 @@ const CartProvider = (props) => {
 };
 
 export default CartProvider;
+

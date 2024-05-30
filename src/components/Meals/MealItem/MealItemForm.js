@@ -1,11 +1,18 @@
-import { useRef, useState } from 'react';
-
+import { useRef, useState, useEffect } from 'react';
 import Input from '../../UI/Input';
 import classes from './MealItemForm.module.css';
 
 const MealItemForm = (props) => {
   const [amountIsValid, setAmountIsValid] = useState(true);
   const amountInputRef = useRef();
+
+  // Load the stored amount from localStorage when the component mounts
+  useEffect(() => {
+    const storedAmount = localStorage.getItem('mealItemAmount_' + props.id);
+    if (storedAmount) {
+      amountInputRef.current.value = storedAmount;
+    }
+  }, [props.id]); // Run this effect whenever props.id changes
 
   const submitHandler = (event) => {
     event.preventDefault();
@@ -21,6 +28,9 @@ const MealItemForm = (props) => {
       setAmountIsValid(false);
       return;
     }
+
+    // Store the entered amount in localStorage
+    localStorage.setItem('mealItemAmount_' + props.id, enteredAmount);
 
     props.onAddToCart(enteredAmountNumber);
   };

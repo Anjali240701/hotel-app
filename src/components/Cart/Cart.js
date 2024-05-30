@@ -1,5 +1,4 @@
-import { useContext } from 'react';
-
+import { useContext, useEffect } from 'react';
 import Modal from '../UI/Modal';
 import CartItem from './CartItem';
 import classes from './Cart.module.css';
@@ -8,8 +7,13 @@ import CartContext from '../../store/cart-context';
 const Cart = (props) => {
   const cartCtx = useContext(CartContext);
 
-  const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`;
+  const totalAmount = `Rs. ${cartCtx.totalAmount.toFixed(2)}`;
   const hasItems = cartCtx.items.length > 0;
+
+  // Save cart items to local storage whenever the cart items change
+  useEffect(() => {
+    localStorage.setItem('cartItems', JSON.stringify(cartCtx.items));
+  }, [cartCtx.items]);
 
   const cartItemRemoveHandler = (id) => {
     cartCtx.removeItem(id);
